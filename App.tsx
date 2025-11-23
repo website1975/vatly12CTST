@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { CURRICULUM } from './constants';
 import { Lesson, ContentTab, QuizQuestion, SimulationData } from './types';
 import Sidebar from './components/Sidebar';
-import { Menu, BookText, Microscope, BrainCircuit, MessageCircleQuestion, HelpCircle, AlertTriangle } from 'lucide-react';
+import { Menu, BookText, Microscope, BrainCircuit, MessageCircleQuestion, HelpCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import { generateLessonTheory, generateLessonQuiz, generateSimulationInfo, checkApiKey } from './services/geminiService';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import QuizSection from './components/QuizSection';
@@ -107,18 +107,25 @@ const App: React.FC = () => {
         
         {/* API Key Error Banner */}
         {apiKeyError && (
-          <div className="bg-red-600 text-white px-4 py-3 shadow-md flex items-center justify-between z-50">
+          <div className="bg-red-600 text-white px-4 py-3 shadow-md flex flex-col md:flex-row items-center justify-between z-50 gap-4">
             <div className="flex items-center gap-3">
               <AlertTriangle size={24} className="flex-shrink-0" />
               <div>
                 <p className="font-bold">Chưa cấu hình API Key!</p>
                 <p className="text-xs md:text-sm opacity-90">
-                  Vui lòng vào Vercel {'>'} Settings {'>'} Environment Variables. 
-                  Thêm Key: <code className="bg-red-800 px-1 rounded">API_KEY</code> - Value: <code className="bg-red-800 px-1 rounded">AIza...</code> (Key từ Google).
-                  Sau đó Redeploy lại.
+                  Vào Vercel {'>'} Settings {'>'} Environment Variables. 
+                  Key: <code className="bg-red-800 px-1 rounded">API_KEY</code>.
                 </p>
               </div>
             </div>
+            <a 
+              href="https://aistudio.google.com/app/apikey" 
+              target="_blank" 
+              rel="noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 bg-white text-red-600 rounded-lg text-sm font-bold hover:bg-red-50 transition-colors whitespace-nowrap"
+            >
+              Lấy Key Mới <ExternalLink size={14} />
+            </a>
           </div>
         )}
 
@@ -147,7 +154,7 @@ const App: React.FC = () => {
                <HelpCircle size={22} />
              </button>
              <div className="hidden md:block text-xs text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-              v1.2 - Powered by Gemini
+              v1.3 - Powered by Gemini
              </div>
           </div>
         </header>
@@ -183,7 +190,9 @@ const App: React.FC = () => {
              <div className="flex flex-col items-center justify-center h-full text-center p-8 opacity-50">
                <AlertTriangle size={64} className="text-slate-300 mb-4" />
                <h3 className="text-xl font-semibold text-slate-500">Ứng dụng chưa được kích hoạt</h3>
-               <p className="text-slate-400 mt-2">Vui lòng kiểm tra lại cấu hình trên Vercel theo hướng dẫn.</p>
+               <p className="text-slate-400 mt-2 max-w-md mx-auto">
+                 Vui lòng cấu hình API Key trên Vercel theo hướng dẫn ở banner màu đỏ phía trên để bắt đầu sử dụng.
+               </p>
              </div>
           ) : (
             <>

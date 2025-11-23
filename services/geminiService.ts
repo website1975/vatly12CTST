@@ -2,8 +2,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Lesson, QuizQuestion, SimulationData } from "../types";
 
-// Access environment variable safely
-const apiKey = process.env.API_KEY || '';
+// Access environment variable safely and remove accidental whitespace
+const apiKey = (process.env.API_KEY || '').trim();
 
 // Initialize AI Client
 const ai = new GoogleGenAI({ apiKey });
@@ -12,7 +12,7 @@ const MODEL_TEXT = 'gemini-2.5-flash';
 
 // Helper to check API key presence
 export const checkApiKey = () => {
-  if (!apiKey || apiKey.length < 10) {
+  if (!apiKey || apiKey.length < 10 || apiKey.startsWith('your_')) {
     console.warn("API Key is missing or invalid in Environment Variables.");
     return false;
   }

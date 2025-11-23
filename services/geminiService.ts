@@ -2,26 +2,56 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Lesson, QuizQuestion, SimulationData } from "../types";
 
-// Access environment variable safely and remove accidental whitespace
-const apiKey = (process.env.API_KEY || '').trim();
-
-// Initialize AI Client
-const ai = new GoogleGenAI({ apiKey });
-
 const MODEL_TEXT = 'gemini-2.5-flash';
 
-// Helper to check API key presence
-export const checkApiKey = () => {
-  if (!apiKey || apiKey.length < 10 || apiKey.startsWith('your_')) {
-    console.warn("API Key is missing or invalid in Environment Variables.");
-    return false;
+// Singleton instance wrapper
+let aiClient: GoogleGenAI | null = null;
+
+// Get API Key from Local Storage (User Input) OR Environment (Vercel)
+export const getStoredApiKey = (): string => {
+  if (typeof window !== 'undefined') {
+    const localKey = localStorage.getItem('USER_API_KEY');
+    if (localKey) return localKey.trim();
   }
-  return true;
+  return (process.env.API_KEY || '').trim();
+};
+
+// Save API Key to Local Storage
+export const saveApiKey = (key: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('USER_API_KEY', key.trim());
+    aiClient = null; // Reset client to force re-initialization
+  }
+};
+
+// Remove API Key
+export const clearApiKey = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('USER_API_KEY');
+    aiClient = null;
+  }
+}
+
+// Helper to check if we have a usable key
+export const checkApiKey = () => {
+  const key = getStoredApiKey();
+  return !!key && key.length > 10 && !key.startsWith('your_');
+};
+
+// Get or Initialize AI Client
+const getClient = () => {
+  if (aiClient) return aiClient;
+  
+  const key = getStoredApiKey();
+  if (!key) throw new Error("API Key is missing.");
+  
+  aiClient = new GoogleGenAI({ apiKey: key });
+  return aiClient;
 };
 
 // Generate formatted theory content
 export const generateLessonTheory = async (lesson: Lesson): Promise<string> => {
-  if (!checkApiKey()) return "Lỗi: Chưa cấu hình API Key trên Vercel. Vui lòng kiểm tra Settings -> Environment Variables.";
+  if (!checkApiKey()) return "Vui lòng nhập API Key để xem nội dung bài học.";
 
   const prompt = `
     Bạn là một giáo viên Vật Lý lớp 12 giỏi, chuyên soạn bài giảng theo bộ sách "Chân Trời Sáng Tạo".
@@ -36,6 +66,7 @@ export const generateLessonTheory = async (lesson: Lesson): Promise<string> => {
   `;
 
   try {
+    const ai = getClient();
     const response = await ai.models.generateContent({
       model: MODEL_TEXT,
       contents: prompt,
@@ -43,7 +74,7 @@ export const generateLessonTheory = async (lesson: Lesson): Promise<string> => {
     return response.text || "Không thể tạo nội dung bài học.";
   } catch (error) {
     console.error("Generate Theory Error:", error);
-    return "Đã xảy ra lỗi khi tải bài học. Vui lòng kiểm tra API Key và thử lại.";
+    return "Đã xảy ra lỗi khi tải bài học. Vui lòng kiểm tra lại API Key.";
   }
 };
 
@@ -54,6 +85,7 @@ export const generateLessonQuiz = async (lesson: Lesson): Promise<QuizQuestion[]
   const prompt = `Tạo 5 câu hỏi trắc nghiệm khách quan về bài học: "${lesson.title}" (${lesson.chapter}) chương trình Vật Lý 12 Chân Trời Sáng Tạo.`;
 
   try {
+    const ai = getClient();
     const response = await ai.models.generateContent({
       model: MODEL_TEXT,
       contents: prompt,
@@ -98,6 +130,7 @@ export const generateSimulationInfo = async (lesson: Lesson): Promise<Simulation
   `;
 
   try {
+    const ai = getClient();
     const response = await ai.models.generateContent({
       model: MODEL_TEXT,
       contents: prompt,
@@ -116,8 +149,6 @@ export const generateSimulationInfo = async (lesson: Lesson): Promise<Simulation
     });
     
     const data = JSON.parse(response.text || "{}");
-    // Since we can't actually generate the image via API here without complexity, 
-    // we use a random efficient placeholder but pass the data structure.
     return {
       ...data,
       imageUrl: `https://picsum.photos/800/400?random=${Math.floor(Math.random() * 1000)}`
@@ -131,9 +162,10 @@ export const generateSimulationInfo = async (lesson: Lesson): Promise<Simulation
 
 // Chat functionality
 export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string, lessonContext: string) => {
-  if (!checkApiKey()) return "Lỗi: Chưa cấu hình API Key.";
+  if (!checkApiKey()) return "Vui lòng nhập API Key trước khi chat.";
 
   try {
+    const ai = getClient();
     const chat = ai.chats.create({
       model: MODEL_TEXT,
       config: {

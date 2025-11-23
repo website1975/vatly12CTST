@@ -1,15 +1,19 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Lesson, QuizQuestion, SimulationData } from "../types";
 
+// Access environment variable safely
 const apiKey = process.env.API_KEY || '';
+
+// Initialize AI Client
 const ai = new GoogleGenAI({ apiKey });
 
 const MODEL_TEXT = 'gemini-2.5-flash';
 
-// Helper to check API key
+// Helper to check API key presence
 export const checkApiKey = () => {
-  if (!apiKey) {
-    console.error("API Key is missing. Please set process.env.API_KEY");
+  if (!apiKey || apiKey.length < 10) {
+    console.warn("API Key is missing or invalid in Environment Variables.");
     return false;
   }
   return true;
@@ -17,7 +21,7 @@ export const checkApiKey = () => {
 
 // Generate formatted theory content
 export const generateLessonTheory = async (lesson: Lesson): Promise<string> => {
-  if (!checkApiKey()) return "Lỗi: Chưa cấu hình API Key.";
+  if (!checkApiKey()) return "Lỗi: Chưa cấu hình API Key trên Vercel. Vui lòng kiểm tra Settings -> Environment Variables.";
 
   const prompt = `
     Bạn là một giáo viên Vật Lý lớp 12 giỏi, chuyên soạn bài giảng theo bộ sách "Chân Trời Sáng Tạo".
@@ -39,7 +43,7 @@ export const generateLessonTheory = async (lesson: Lesson): Promise<string> => {
     return response.text || "Không thể tạo nội dung bài học.";
   } catch (error) {
     console.error("Generate Theory Error:", error);
-    return "Đã xảy ra lỗi khi tải bài học. Vui lòng thử lại.";
+    return "Đã xảy ra lỗi khi tải bài học. Vui lòng kiểm tra API Key và thử lại.";
   }
 };
 
@@ -127,7 +131,7 @@ export const generateSimulationInfo = async (lesson: Lesson): Promise<Simulation
 
 // Chat functionality
 export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string, lessonContext: string) => {
-  if (!checkApiKey()) return "Lỗi API Key.";
+  if (!checkApiKey()) return "Lỗi: Chưa cấu hình API Key.";
 
   try {
     const chat = ai.chats.create({
@@ -144,6 +148,6 @@ export const sendChatMessage = async (history: {role: string, parts: {text: stri
     return result.text;
   } catch (error) {
     console.error("Chat Error", error);
-    return "Xin lỗi, tôi đang gặp sự cố kết nối.";
+    return "Xin lỗi, tôi đang gặp sự cố kết nối hoặc API Key không hợp lệ.";
   }
 };
